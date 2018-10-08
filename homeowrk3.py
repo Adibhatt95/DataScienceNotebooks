@@ -1,7 +1,7 @@
 import pandas as pd 
 import numpy as np 
 from sklearn import tree
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score,confusion_matrix,roc_auc_score
 import matplotlib.pyplot as plt
 
 data = pd.read_csv("cell2cell_data.csv",sep='/t',engine='python')
@@ -87,3 +87,50 @@ corr15 = col5.corr(col1)
 # model2.fit(x_train,y_train)
 # y_predict = model2.predict(x_test)
 # #print(y_predict)
+
+def testTrees(X_train,Y_train,X_test,Y_test,dep,leaf,auc):
+    print("{} {}".format(dep,leaf))
+    clf = tree.DecisionTreeClassifier(criterion='entropy',min_samples_leaf=leaf,min_samples_split=dep)
+    clf = clf.fit(X_train,Y_train)
+    print(clf)
+    if (auc==0):
+        cm = confusion_matrix(clf.predict(X_test),y_test)
+        return (cm[0][0]+cm[1][1])/float(sum(cm))
+    else:
+        Y_predict = clf.predict(X_test)
+        print(Y_predict)
+        return accuracy_score(Y_test,Y_predict)
+    
+
+depths=[8000,5000,3000,1000]
+leaves=[50,100,200,300,500,800,3000]
+
+#Run all of the options
+run=1
+res=dict()
+if (run==1):
+    #Initialize dictionary of results
+    for d in depths:
+        res[d]=list()
+
+    #Now train and get results for each option
+    for d in depths:
+        for l in leaves:
+            res[d].append(testTrees(x_train,y_train,x_test,y_test,d,l,1))
+
+print(res[depths[0]])
+print(res[depths[1]])
+print(res[depths[2]])
+print(res[depths[3]])
+#Now plot            
+fig = plt.figure()
+ax=fig.add_subplot(111)
+plt.plot(leaves,res[depths[0]],'b-',label='Depth={}'.format(depths[0]))
+plt.plot(leaves,res[depths[1]],'r-',label='Depth={}'.format(depths[1]))
+plt.plot(leaves,res[depths[2]],'y-',label='Depth={}'.format(depths[2]))
+plt.plot(leaves,res[depths[3]],'g-',label='Depth={}'.format(depths[3]))
+plt.legend(loc=4)
+ax.set_xlabel('Min Leaf Size')
+ax.set_ylabel('Test Set AUC')
+plt.title('Holdout AUC by Hyperparameters')
+plt.show()
